@@ -1,0 +1,80 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-Qcode}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.production}
+      POSTGRES_DB: ${POSTGRES_DB:-Qcode}
+    volumes:
+      - forge-postgres:/var/lib/postgresql/data
+      - ./apps/api/drizzle/0000_initial.sql:/docker-entrypoint-initdb.d/0000_initial.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [backend]
+
+  api:
+    image: ${FORGE_API_IMAGE:-forge-api:0.1.0}
+    build:
+      context: .
+      target: api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      API_HOST: 0.0.0.0
+      API_PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-Qcode}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-Qcode}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env.production}
+      OTP_SECRET: ${OTP_SECRET:?set OTP_SECRET in .env.production}
+      WEB_ORIGIN: ${WEB_ORIGIN:?set public HTTPS WEB_ORIGIN in .env.production}
+      ALLOW_INSECURE_PUBLIC_ORIGIN: ${ALLOW_INSECURE_PUBLIC_ORIGIN:-false}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:?set BOOTSTRAP_ADMIN_EMAIL in .env.production}
+      REGISTRATION_OPEN_DEFAULT: ${REGISTRATION_OPEN_DEFAULT:-false}
+      RETURN_LOGIN_CODE: "false"
+      RESEND_API_KEY: ${RESEND_API_KEY:?set RESEND_API_KEY in .env.production}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:?set RESEND_FROM_EMAIL in .env.production}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks: [backend, frontend]
+
+  web:
+    image: ${FORGE_WEB_IMAGE:-forge-web:0.1.0}
+    build:
+      context: .
+      target: web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      API_URL: http://api:4000
+      ALLOW_INSECURE_INTERNAL_API: "true"
+      WEB_ORIGIN: ${WEB_ORIGIN}
+      ALLOW_INSECURE_PUBLIC_ORIGIN: ${ALLOW_INSECURE_PUBLIC_ORIGIN:-false}
+      NEXT_PUBLIC_AGENT_URL: http://127.0.0.1:47621
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks: [backend, frontend]
+
+networks:
+  backend:
+    internal: true
+  frontend:
+
+volumes:
+  forge-postgres:

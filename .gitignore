@@ -1,0 +1,17 @@
+node_modules
+.pnpm-store
+.next
+dist
+.turbo
+.DS_Store
+test-results
+*.tsbuildinfo
+*.db
+*.db-shm
+*.db-wal
+.env
+target
+src-tauri/target
+apps/desktop/.sidecar-build
+apps/desktop/src-tauri/binaries
+release
