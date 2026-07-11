@@ -59,7 +59,7 @@ fn main() {
                     let state = app.state::<SidecarState>();
                     if let Ok(mut state) = state.0.lock() {
                         *state = Some(child);
-                    }
+                    };
                 }
                 Err(error) => eprintln!("Forge Agent sidecar launch failed: {error}"),
             }
