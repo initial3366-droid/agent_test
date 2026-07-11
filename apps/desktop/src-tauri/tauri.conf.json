@@ -40,6 +40,7 @@
       "wix": null
     },
     "macOS": {
+      "entitlements": "Entitlements.plist",
       "minimumSystemVersion": "11.0"
     }
   }
