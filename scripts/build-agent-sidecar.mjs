@@ -39,7 +39,7 @@ await new Promise((resolve, reject) => {
     cwd: root,
     env: { ...process.env, PKG_CACHE_PATH: path.join(temporary, "pkg-cache") },
     stdio: "inherit",
-    shell: false,
+    shell: process.platform === "win32",
   });
   child.once("error", reject);
   child.once("exit", code => code === 0 ? resolve() : reject(new Error(`pkg exited with code ${code}`)));
