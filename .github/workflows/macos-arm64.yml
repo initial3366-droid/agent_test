@@ -66,6 +66,8 @@ jobs:
 
       - name: Build macOS ARM64 installer
         run: pnpm --filter @forge/desktop build
+        env:
+          APPLE_SIGNING_IDENTITY: "-"
 
       - name: Upload installer
         uses: actions/upload-artifact@v4
