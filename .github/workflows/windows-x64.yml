@@ -58,6 +58,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build workspace dependencies
+        run: pnpm --filter @forge/protocol build && pnpm --filter @forge/agent-core build
+
       - name: Build Windows x64 installers
         run: pnpm --filter @forge/desktop build
 
